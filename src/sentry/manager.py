@@ -323,7 +323,7 @@ class GroupManager(BaseManager, ChartMixin):
 
         return self.save_data(project, data)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def save_data(self, project, data, raw=False):
         # TODO: this function is way too damn long and needs refactored
         # the inner imports also suck so let's try to move it away from
@@ -440,7 +440,6 @@ class GroupManager(BaseManager, ChartMixin):
             transaction.savepoint_rollback(sid, using=using)
             return event
         transaction.savepoint_commit(sid, using=using)
-        transaction.commit_unless_managed(using=using)
 
         if not raw:
             send_group_processors(
@@ -486,8 +485,6 @@ class GroupManager(BaseManager, ChartMixin):
             checksum=event.checksum,
             defaults=kwargs
         )
-        if is_new:
-            transaction.commit_unless_managed(using=group._state.db)
 
         update_kwargs = {
             'times_seen': 1,
@@ -517,8 +514,6 @@ class GroupManager(BaseManager, ChartMixin):
                     active_at__gte=date,
                 ).update(active_at=date, status=STATUS_UNRESOLVED))
 
-                transaction.commit_unless_managed(using=group._state.db)
-
                 group.active_at = date
                 group.status = STATUS_UNRESOLVED
 
@@ -530,10 +525,6 @@ class GroupManager(BaseManager, ChartMixin):
         else:
             # TODO: this update should actually happen as part of create
             group.update(score=ScoreClause(group))
-
-            # We need to commit because the queue can run too fast and hit
-            # an issue with the group not existing before the buffers run
-            transaction.commit_unless_managed(using=group._state.db)
 
         # Determine if we've sampled enough data to store this event
         if is_new:

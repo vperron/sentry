@@ -114,7 +114,7 @@ def manage_users(request):
 
 
 @requires_admin
-@transaction.commit_on_success
+@transaction.atomic
 @csrf_protect
 def create_new_user(request):
     if not request.user.has_perm('auth.can_add_user'):
