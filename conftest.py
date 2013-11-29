@@ -22,9 +22,6 @@ def pytest_configure(config):
             'ENGINE': 'django.db.backends.postgresql_psycopg2',
             'USER': 'postgres',
             'NAME': 'sentry',
-            'OPTIONS': {
-                'autocommit': True,
-            }
         })
     elif test_db == 'sqlite':
         settings.DATABASES['default'].update({

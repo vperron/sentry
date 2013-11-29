@@ -39,11 +39,6 @@ DATABASES = {
         'PASSWORD': '',
         'HOST': '',
         'PORT': '',
-
-        # If you're using Postgres, we recommend turning on autocommit
-        # 'OPTIONS': {
-        #     'autocommit': True,
-        # }
     }
 }
 
