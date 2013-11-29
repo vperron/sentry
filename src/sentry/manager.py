@@ -12,7 +12,6 @@ import datetime
 import hashlib
 import logging
 import time
-import warnings
 import uuid
 
 from celery.signals import task_postrun
@@ -411,11 +410,7 @@ class GroupManager(BaseManager, ChartMixin):
                 **group_kwargs
             )
         except Exception as exc:
-            # TODO: should we mail admins when there are failures?
-            try:
-                logger.exception(u'Unable to process log entry: %s', exc)
-            except Exception, exc:
-                warnings.warn(u'Unable to process log entry: %s', exc)
+            logger.exception(u'Unable to create group: %s', exc)
             return
 
         using = group._state.db
@@ -428,6 +423,7 @@ class GroupManager(BaseManager, ChartMixin):
                 with Savepoint(using=using):
                     event.save()
             except IntegrityError:
+                logger.exception('Event was already present in database')
                 return event
 
         try:
@@ -435,6 +431,7 @@ class GroupManager(BaseManager, ChartMixin):
                 EventMapping.objects.create(
                     project=project, group=group, event_id=event_id)
         except IntegrityError:
+            logger.exception('event_id was already present in database')
             return event
 
         if not raw:
