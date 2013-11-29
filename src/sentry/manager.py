@@ -19,7 +19,7 @@ from celery.signals import task_postrun
 from django.conf import settings
 from django.contrib.auth.models import UserManager
 from django.core.signals import request_finished
-from django.db import models, transaction, IntegrityError
+from django.db import models, IntegrityError
 from django.db.models import Sum
 from django.utils import timezone
 from django.utils.datastructures import SortedDict
@@ -31,6 +31,7 @@ from sentry.constants import (
     MAX_EXTRA_VARIABLE_SIZE, LOG_LEVELS, DEFAULT_LOGGER_NAME,
     MAX_CULPRIT_LENGTH)
 from sentry.db.models import BaseManager
+from sentry.db.transactions import Savepoint
 from sentry.processors.base import send_group_processors
 from sentry.signals import regression_signal
 from sentry.tasks.index import index_event
@@ -323,7 +324,6 @@ class GroupManager(BaseManager, ChartMixin):
 
         return self.save_data(project, data)
 
-    @transaction.atomic
     def save_data(self, project, data, raw=False):
         # TODO: this function is way too damn long and needs refactored
         # the inner imports also suck so let's try to move it away from
@@ -424,22 +424,18 @@ class GroupManager(BaseManager, ChartMixin):
 
         # save the event unless its been sampled
         if not is_sample:
-            sid = transaction.savepoint(using=using)
             try:
-                event.save()
+                with Savepoint(using=using):
+                    event.save()
             except IntegrityError:
-                transaction.savepoint_rollback(sid, using=using)
                 return event
-            transaction.savepoint_commit(sid, using=using)
 
-        sid = transaction.savepoint(using=using)
         try:
-            EventMapping.objects.create(
-                project=project, group=group, event_id=event_id)
+            with Savepoint(using=using):
+                EventMapping.objects.create(
+                    project=project, group=group, event_id=event_id)
         except IntegrityError:
-            transaction.savepoint_rollback(sid, using=using)
             return event
-        transaction.savepoint_commit(sid, using=using)
 
         if not raw:
             send_group_processors(

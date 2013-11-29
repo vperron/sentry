@@ -6,11 +6,13 @@ sentry.utils.query
 :license: BSD, see LICENSE for more details.
 """
 
-from django.db import transaction, IntegrityError
+from django.db import IntegrityError
 from django.db.models import ForeignKey
 from django.db.models.deletion import Collector
 from django.db.models.query import QuerySet
 from django.db.models.signals import pre_delete, pre_save, post_save, post_delete
+
+from sentry.db.transactions import Savepoint
 
 
 class QuerySetDoubleIteration(Exception):
@@ -246,30 +248,12 @@ def merge_into(self, other, callback=lambda x: x, using='default'):
             if send_signals:
                 pre_save.send(created=True, **signal_kwargs)
 
-            sid = transaction.savepoint(using=using)
-
             try:
-                model.objects.filter(pk=obj.pk).update(**update_kwargs)
+                with Savepoint(using=using):
+                    model.objects.using(using).filter(pk=obj.pk).update(**update_kwargs)
             except IntegrityError:
                 # duplicate key exists, destroy the relations
-                transaction.savepoint_rollback(sid, using=using)
-                model.objects.filter(pk=obj.pk).delete()
-            else:
-                transaction.savepoint_commit(sid, using=using)
+                model.objects.using(using).filter(pk=obj.pk).delete()
 
             if send_signals:
                 post_save.send(created=True, **signal_kwargs)
-
-
-class Savepoint(object):
-    def __init__(self, using='default'):
-        self.using = using
-
-    def __enter__(self):
-        self.sid = transaction.savepoint(using=self.using)
-
-    def __exit__(self, *exc_info):
-        if exc_info:
-            transaction.savepoint_rollback(self.sid, using=self.using)
-        else:
-            transaction.savepoint_commit(self.sid, using=self.using)

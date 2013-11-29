@@ -8,19 +8,20 @@ sentry.utils.safe
 
 import logging
 
-from django.db import transaction
-
 from sentry.constants import (
     MAX_VARIABLE_SIZE, MAX_DICTIONARY_ITEMS, MAX_STACKTRACE_FRAMES
 )
+from sentry.db.transactions import rollback_unless_autocommit
 from sentry.utils.strings import truncatechars
 
 
 def safe_execute(func, *args, **kwargs):
+    # TODO: we should make smart savepoints (only executing the savepoint server
+    # side if we execute a query)
     try:
         result = func(*args, **kwargs)
     except Exception, e:
-        transaction.rollback_unless_managed()
+        rollback_unless_autocommit()
         if hasattr(func, 'im_class'):
             cls = func.im_class
         else:

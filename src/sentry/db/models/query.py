@@ -1,6 +1,6 @@
 """
-sentry.db.query
-~~~~~~~~~~~~~~~
+sentry.db.models.query
+~~~~~~~~~~~~~~~~~~~~~~
 
 :copyright: (c) 2010-2013 by the Sentry Team, see AUTHORS for more details.
 :license: BSD, see LICENSE for more details.
@@ -8,10 +8,11 @@ sentry.db.query
 
 from __future__ import absolute_import
 
-from django.db import router, transaction, IntegrityError
+from django.db import router, IntegrityError
 from django.db.models.expressions import ExpressionNode
 from django.db.models.signals import post_save
 
+from sentry.db.transactions import rollback_unless_autocommit
 from .utils import resolve_expression_node
 
 __all__ = ('update', 'create_or_update')
@@ -79,7 +80,7 @@ def create_or_update(model, using=None, **kwargs):
     try:
         return objects.create(**create_kwargs), True
     except IntegrityError:
-        transaction.rollback_unless_managed(using=using)
+        rollback_unless_autocommit(using=using)
         affected = objects.filter(**kwargs).update(**defaults)
 
     return affected, False
