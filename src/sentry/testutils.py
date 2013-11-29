@@ -12,7 +12,7 @@ import base64
 import pytest
 import os.path
 
-from exam import Exam, fixture, before  # NOQA
+from exam import Exam, fixture
 from functools import wraps
 
 from django.conf import settings

@@ -6,10 +6,10 @@ import mock
 import logging
 
 from django.core.urlresolvers import reverse
-
+from exam import fixture, before
 from sentry.constants import STATUS_HIDDEN
 from sentry.models import Project, ProjectKey, ProjectOption, TagKey
-from sentry.testutils import TestCase, fixture, before
+from sentry.testutils import TestCase
 
 logger = logging.getLogger(__name__)
 

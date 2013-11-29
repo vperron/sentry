@@ -6,8 +6,9 @@ import mock
 
 from django.core.urlresolvers import reverse
 from django.http import HttpRequest
+from exam import fixture, before
 from sentry.models import UserOption, LostPasswordHash, User
-from sentry.testutils import TestCase, fixture, before
+from sentry.testutils import TestCase
 from sentry.web.frontend.accounts import login_redirect
 from social_auth.models import UserSocialAuth
 

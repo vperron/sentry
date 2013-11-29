@@ -156,9 +156,11 @@ class SentryManagerTest(TestCase):
 
     def test_dupe_message_id(self):
         event = Group.objects.from_kwargs(1, event_id=1, message='foo')
-        self.assertEquals(event.message, 'foo')
-        self.assertEquals(event.project_id, 1)
-        self.assertEquals(Event.objects.count(), 1)
+        assert event.message == 'foo'
+        assert event.project_id == 1
+        assert event.id
+        assert Group.objects.count() == 1
+        assert Event.objects.count() == 1
 
         # ensure that calling it again doesnt raise a db error
         Group.objects.from_kwargs(1, event_id=1, message='foo')

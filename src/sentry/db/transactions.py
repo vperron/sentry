@@ -8,7 +8,7 @@ sentry.db.transactions
 
 from __future__ import absolute_import
 
-from django.db import transaction
+from django.db import transaction, connections
 
 
 class Savepoint(object):
@@ -16,7 +16,7 @@ class Savepoint(object):
         self.using = using
 
     def __enter__(self):
-        self._in_trans = not transaction.get_autocommit(using=self.using)
+        self._in_trans = in_transaction(self.using)
         if not self._in_trans:
             return
         self.sid = transaction.savepoint(using=self.using)
@@ -24,13 +24,18 @@ class Savepoint(object):
     def __exit__(self, *exc_info):
         if not self._in_trans:
             return
+
         if exc_info:
             transaction.savepoint_rollback(self.sid, using=self.using)
         else:
             transaction.savepoint_commit(self.sid, using=self.using)
 
 
-def rollback_unless_autocommit(using=None):
+def in_transaction(using='default'):
+    return connections[using].in_atomic_block
+
+
+def rollback_unless_autocommit(using='default'):
     # Django 1.6 removes this nescesary API
-    if transaction.get_autocommit(using=using):
+    if in_transaction(using):
         transaction.rollback()

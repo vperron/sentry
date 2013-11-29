@@ -3,10 +3,10 @@
 from __future__ import absolute_import
 
 from django.core.urlresolvers import reverse
-
+from exam import fixture, before
 from sentry.constants import MEMBER_USER
 from sentry.models import Group, Project, TeamMember, Team, User
-from sentry.testutils import TestCase, fixture, before
+from sentry.testutils import TestCase
 
 
 class EnvStatusTest(TestCase):
