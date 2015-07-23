@@ -370,28 +370,21 @@ class SourceProcessor(object):
         self.cache = SourceCache()
         self.sourcemaps = SourceMapCache()
 
-    def get_stacktraces(self, data):
+    def get_stacktrace(self, data):
         try:
-            stacktraces = [
-                Stacktrace.to_python(e['stacktrace'])
-                for e in data['sentry.interfaces.Exception']['values']
-                if e.get('stacktrace')
-            ]
+            stacktrace = Stacktrace.to_python(data['stacktrace'])
         except KeyError:
-            stacktraces = None
+            stacktrace = None
 
-        return stacktraces
+        return stacktrace
 
-    def get_valid_frames(self, stacktraces):
+    def get_valid_frames(self, stacktrace):
         # build list of frames that we can actually grab source for
-        frames = []
-        for stacktrace in stacktraces:
-            frames.extend([
-                f for f in stacktrace.frames
-                if f.lineno is not None
-                and f.is_url()
-            ])
-        return frames
+        return [
+            f for f in stacktrace.frames
+            if f.lineno is not None
+            and f.is_url()
+        ]
 
     def get_release(self, project, data):
         if not data.get('release'):
@@ -403,12 +396,12 @@ class SourceProcessor(object):
         )
 
     def process(self, data):
-        stacktraces = self.get_stacktraces(data)
-        if not stacktraces:
+        stacktrace = self.get_stacktrace(data)
+        if not stacktrace:
             logger.debug('No stacktrace for event %r', data['event_id'])
             return
 
-        frames = self.get_valid_frames(stacktraces)
+        frames = self.get_valid_frames(stacktrace)
         if not frames:
             logger.debug('Event %r has no frames with enough context to fetch remote source', data['event_id'])
             return
@@ -424,19 +417,18 @@ class SourceProcessor(object):
         self.populate_source_cache(project, frames, release)
         self.expand_frames(frames)
         self.ensure_module_names(frames)
-        self.fix_culprit(data, stacktraces)
-        self.update_stacktraces(data, stacktraces)
+        self.fix_culprit(data, stacktrace)
+        self.update_stacktrace(data, stacktrace)
 
         return data
 
-    def fix_culprit(self, data, stacktraces):
-        culprit_frame = stacktraces[0].frames[-1]
+    def fix_culprit(self, data, stacktrace):
+        culprit_frame = stacktrace.frames[-1]
         if culprit_frame.module and culprit_frame.function:
             data['culprit'] = truncatechars(generate_culprit(culprit_frame), MAX_CULPRIT_LENGTH)
 
-    def update_stacktraces(self, data, stacktraces):
-        for exception, stacktrace in zip(data['sentry.interfaces.Exception']['values'], stacktraces):
-            exception['stacktrace'] = stacktrace.to_json()
+    def update_stacktrace(self, data, stacktrace):
+        data['exception']['stacktrace'] = stacktrace.to_json()
 
     def ensure_module_names(self, frames):
         # TODO(dcramer): this doesn't really fit well with generic URLs so we

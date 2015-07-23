@@ -26,26 +26,25 @@ class JavascriptIntegrationTest(TestCase):
         data = {
             'message': 'hello',
             'platform': 'javascript',
-            'sentry.interfaces.Exception': {
-                'values': [{
-                    'type': 'Error',
-                    'stacktrace': {
-                        'frames': [
-                            {
-                                'abs_path': 'http://example.com/foo.js',
-                                'filename': 'foo.js',
-                                'lineno': 4,
-                                'colno': 0,
-                            },
-                            {
-                                'abs_path': 'http://example.com/foo.js',
-                                'filename': 'foo.js',
-                                'lineno': 1,
-                                'colno': 0,
-                            },
-                        ],
+            'exception': {
+                'type': 'Error',
+                'value': 'Foo failed in bar',
+            },
+            'stacktrace': {
+                'frames': [
+                    {
+                        'abs_path': 'http://example.com/foo.js',
+                        'filename': 'foo.js',
+                        'lineno': 4,
+                        'colno': 0,
                     },
-                }],
+                    {
+                        'abs_path': 'http://example.com/foo.js',
+                        'filename': 'foo.js',
+                        'lineno': 1,
+                        'colno': 0,
+                    },
+                ],
             }
         }
 
@@ -80,20 +79,19 @@ class JavascriptIntegrationTest(TestCase):
         data = {
             'message': 'hello',
             'platform': 'javascript',
-            'sentry.interfaces.Exception': {
-                'values': [{
-                    'type': 'Error',
-                    'stacktrace': {
-                        'frames': [
-                            {
-                                'abs_path': 'http://example.com/test.min.js',
-                                'filename': 'test.js',
-                                'lineno': 1,
-                                'colno': 0,
-                            },
-                        ],
+            'exception': {
+                'type': 'Error',
+                'value': 'Something'
+            },
+            'stacktrace': {
+                'frames': [
+                    {
+                        'abs_path': 'http://example.com/test.min.js',
+                        'filename': 'test.js',
+                        'lineno': 1,
+                        'colno': 0,
                     },
-                }],
+                ],
             }
         }
 
@@ -135,20 +133,19 @@ class JavascriptIntegrationTest(TestCase):
         data = {
             'message': 'hello',
             'platform': 'javascript',
-            'sentry.interfaces.Exception': {
-                'values': [{
-                    'type': 'Error',
-                    'stacktrace': {
-                        'frames': [
-                            {
-                                'abs_path': 'http://example.com/file.min.js',
-                                'filename': 'file.min.js',
-                                'lineno': 1,
-                                'colno': 39,
-                            },
-                        ],
+            'exception': {
+                'type': 'Error',
+                'value': 'Something'
+            },
+            'stacktrace': {
+                'frames': [
+                    {
+                        'abs_path': 'http://example.com/file.min.js',
+                        'filename': 'file.min.js',
+                        'lineno': 1,
+                        'colno': 39,
                     },
-                }],
+                ],
             }
         }
 
@@ -158,6 +155,7 @@ class JavascriptIntegrationTest(TestCase):
         event = Event.objects.get()
         exception = event.interfaces['sentry.interfaces.Exception']
         frame_list = exception.values[0].stacktrace.frames
+        import ipdb; ipdb.set_trace();
 
         frame = frame_list[0]
         assert not frame.errors
@@ -232,20 +230,19 @@ class JavascriptIntegrationTest(TestCase):
             'message': 'hello',
             'platform': 'javascript',
             'release': 'abc',
-            'sentry.interfaces.Exception': {
-                'values': [{
-                    'type': 'Error',
-                    'stacktrace': {
-                        'frames': [
-                            {
-                                'abs_path': 'http://example.com/file.min.js',
-                                'filename': 'file.min.js',
-                                'lineno': 1,
-                                'colno': 39,
-                            },
-                        ],
+            'exception': {
+                'type': 'Error',
+                'value': 'Something'
+            },
+            'stacktrace': {
+                'frames': [
+                    {
+                        'abs_path': 'http://example.com/file.min.js',
+                        'filename': 'file.min.js',
+                        'lineno': 1,
+                        'colno': 39,
                     },
-                }],
+                ],
             }
         }
 
